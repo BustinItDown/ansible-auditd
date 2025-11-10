@@ -1,0 +1,40 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install auditd and audispd-plugins
+  apt:
+    name:
+      - auditd
+      - audispd-plugins
+    state: present
+
+- name: Deploy auditd configuration
+  template:
+    src: auditd.conf.j2
+    dest: /etc/audit/auditd.conf
+    owner: root
+    group: root
+    mode: '0640'
+  notify: restart auditd
+
+- name: Deploy audit rules
+  template:
+    src: audit.rules.j2
+    dest: /etc/audit/rules.d/audit.rules
+    owner: root
+    group: root
+    mode: '0640'
+  notify: restart auditd
+
+- name: Ensure auditd service is enabled and started
+  systemd:
+    name: auditd
+    enabled: yes
+    state: started
+
+- name: Load audit rules
+  command: augenrules --load
+  changed_when: false
